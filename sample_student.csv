@@ -1,0 +1,9 @@
+roll_no,name,department,batch,cgpa,skills,eligibility_status,placement_status
+1323001,Aarav Sharma,AIML,2023-2027,8.7,"Python, Machine Learning, SQL",Eligible,Placed
+1323002,Priya Verma,CSE,2023-2027,9.1,"Java, Web Development, React",Eligible,Placed
+1323003,Rohan Gupta,IT,2023-2027,7.4,"C++, Data Structures, MySQL",Eligible,In Process
+1323004,Ananya Sen,ECE,2023-2027,8.2,"Embedded Systems, Python, IoT",Eligible,Unplaced
+1323005,Karan Singh,BCA,2023-2027,6.8,"HTML, CSS, JavaScript",Eligible,Unplaced
+1323006,Meera Nair,MCA,2023-2027,9.4,"Python, FastAPI, Docker, PostgreSQL",Eligible,Placed
+1323007,Aditya Joshi,CSE,2023-2027,5.9,"Python, Basics of Web",Not Eligible,Not Eligible
+1323008,Sanya Malhotra,AIML,2023-2027,8.5,"Python, PyTorch, Data Analysis",Eligible,In Process
