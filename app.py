@@ -6,6 +6,40 @@ from datetime import datetime
 import google.generativeai as genai
 
 # ==========================================
+# PAGE CONFIGURATION & DARK THEME STYLING
+# ==========================================
+st.set_page_config(
+    page_title="Intelligent Student Placement Management System", 
+    page_icon="🎓", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom Dark Theme CSS Styling
+st.markdown("""
+    <style>
+    .main {
+        background-color: #0e1117;
+        color: #ffffff;
+    }
+    .stSidebar {
+        background-color: #161b22;
+    }
+    div.stButton > button {
+        background-color: #238636;
+        color: white;
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        border: none;
+    }
+    div.stButton > button:hover {
+        background-color: #2ea043;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# ==========================================
 # 1. DATABASE SETUP & INITIALIZATION
 # ==========================================
 def init_db():
@@ -60,12 +94,11 @@ def get_connection():
     return sqlite3.connect("placement_system.db")
 
 # ==========================================
-# 2. APPLICATION NAVIGATION & PAGE SETUP
+# 2. APPLICATION NAVIGATION & HEADER
 # ==========================================
-st.set_page_config(page_title="Intelligent Placement Management System", page_icon="🎓", layout="wide")
-
 st.title("🎓 Intelligent Student Placement Record Management System")
 st.markdown("*Prompt Manthan - Round 2 | Technophilia 2K26*")
+st.markdown("---")
 
 menu = [
     "📊 Placement Dashboard", 
@@ -121,7 +154,8 @@ if choice == "📊 Placement Dashboard":
                     'Unplaced': '#e74c3c',
                     'In Process': '#f1c40f',
                     'Not Eligible': '#95a5a6'
-                }
+                },
+                template="plotly_dark"
             )
             st.plotly_chart(fig_pie, use_container_width=True)
             
@@ -134,7 +168,8 @@ if choice == "📊 Placement Dashboard":
                 y='Count', 
                 color='placement_status', 
                 barmode='group',
-                title="Status by Department"
+                title="Status by Department",
+                template="plotly_dark"
             )
             st.plotly_chart(fig_bar, use_container_width=True)
 
@@ -145,12 +180,11 @@ elif choice == "💡 AI Placement Assistant":
     st.header("💡 AI-Powered Placement Assistant (Gemini API)")
     st.markdown("Query records in plain text, shortlist candidates for specific job roles, or draft company emails using AI.")
     
-    # Sidebar or Header API Key Input
     api_key = st.text_input("Enter Google Gemini API Key", type="password", help="Enter your Gemini API key to activate AI features.")
     
     if api_key:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-3.8-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
         conn = get_connection()
         df_students = pd.read_sql_query("SELECT * FROM students", conn)
@@ -256,15 +290,30 @@ elif choice == "👨‍🎓 Student Management":
             df_upload = pd.read_csv(uploaded_file)
             st.write("Preview:", df_upload.head())
             if st.button("Confirm Bulk Import"):
-                conn = get_connection()
-                for _, row in df_upload.iterrows():
-                    conn.execute('''
-                        INSERT OR REPLACE INTO students (roll_no, name, department, batch, cgpa, skills, eligibility_status, placement_status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (str(row['roll_no']), row['name'], row['department'], str(row['batch']), float(row['cgpa']), str(row['skills']), str(row.get('eligibility_status', 'Eligible')), str(row.get('placement_status', 'Unplaced'))))
-                conn.commit()
-                conn.close()
-                st.success("Bulk dataset imported successfully!")
+                try:
+                    # Clean column names to prevent KeyError
+                    df_upload.columns = df_upload.columns.str.strip().str.lower()
+                    
+                    conn = get_connection()
+                    for _, row in df_upload.iterrows():
+                        conn.execute('''
+                            INSERT OR REPLACE INTO students (roll_no, name, department, batch, cgpa, skills, eligibility_status, placement_status)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (
+                            str(row.get('roll_no', row.get('roll no', 'N/A'))), 
+                            str(row.get('name', row.get('student name', 'Unknown'))), 
+                            str(row.get('department', row.get('dept', 'CSE'))), 
+                            str(row.get('batch', '2023-2027')), 
+                            float(row.get('cgpa', 7.0)), 
+                            str(row.get('skills', '')), 
+                            str(row.get('eligibility_status', 'Eligible')), 
+                            str(row.get('placement_status', 'Unplaced'))
+                        ))
+                    conn.commit()
+                    conn.close()
+                    st.success("Bulk dataset imported successfully!")
+                except Exception as e:
+                    st.error(f"Error importing CSV: {e}")
 
     with tab3:
         st.subheader("Student Database")
@@ -322,13 +371,11 @@ elif choice == "🏢 Company & Offers":
                     conn = get_connection()
                     cursor = conn.cursor()
                     
-                    # Update Student Status
                     if offer_status == "Placed":
                         cursor.execute("UPDATE students SET placement_status='Placed' WHERE roll_no=?", (selected_roll,))
                     elif offer_status == "In Process":
                         cursor.execute("UPDATE students SET placement_status='In Process' WHERE roll_no=?", (selected_roll,))
                     
-                    # Log in Placement History
                     cursor.execute('''
                         INSERT INTO placement_history (roll_no, company_name, job_role, package_lpa, status, updated_at)
                         VALUES (?, ?, ?, ?, ?, ?)
